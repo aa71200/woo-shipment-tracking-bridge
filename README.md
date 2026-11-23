@@ -2,7 +2,13 @@
 
 An original CodexaWP portfolio demo for receiving carrier updates. A signed REST request attaches one sample shipment to a WooCommerce order. The tracking number and latest status appear for staff and on the order details page.
 
-![Delivered test shipment in the HPOS order editor](docs/order-shipment.png)
+## Interface preview
+
+<p align="center">
+  <a href="docs/order-shipment.png"><img src="docs/order-shipment.png" width="350" alt="Delivered shipment and tracking number in the WooCommerce order editor"></a>
+  <br>
+  <em>HPOS order editor · delivered shipment with its tracking number and progress</em>
+</p>
 
 ## Try it
 
