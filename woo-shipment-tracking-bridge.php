@@ -89,9 +89,33 @@ function display( \WC_Order $order ): void {
 	if ( ! $shipment ) {
 		return;
 	}
-	echo '<p class="codexawp-shipment"><strong>Shipment</strong><br>';
-	echo esc_html( $shipment['tracking'] . ' · ' . ucfirst( str_replace( '_', ' ', $shipment['stage'] ) ) );
-	echo '</p>';
+	$labels = [ 'dispatched' => 'Dispatched', 'in_transit' => 'In transit', 'delivered' => 'Delivered' ];
+	$stage = $shipment['stage'];
+	?>
+	<section class="codexawp-shipment" data-stage="<?php echo esc_attr( $stage ); ?>" aria-label="Shipment tracking">
+		<div class="shipment-header"><strong class="shipment-title">Shipment tracking</strong><span class="shipment-status"><?php echo esc_html( $labels[$stage] ); ?></span></div>
+		<div class="shipment-reference"><span>Tracking number</span><b><?php echo esc_html( $shipment['tracking'] ); ?></b></div>
+		<ol class="shipment-route" aria-label="Delivery progress">
+		<?php foreach ( $labels as $step => $label ) : ?>
+			<li class="<?php echo esc_attr( STAGES[$step] <= STAGES[$stage] ? 'is-reached' : '' ); ?>" <?php if ( $step === $stage ) { echo 'aria-current="step"'; } ?>><?php echo esc_html( $label ); ?></li>
+		<?php endforeach; ?>
+		</ol>
+	</section>
+	<?php
 }
 add_action( 'woocommerce_admin_order_data_after_shipping_address', __NAMESPACE__ . '\display' );
 add_action( 'woocommerce_order_details_after_order_table', __NAMESPACE__ . '\display' );
+
+function enqueue_styles(): void {
+	wp_enqueue_style( 'codexawp-shipment', plugins_url( 'shipment.css', __FILE__ ), [], '1.1.0' );
+}
+add_action( 'admin_enqueue_scripts', static function (): void {
+	if ( in_array( get_current_screen()?->id, [ 'shop_order', 'woocommerce_page_wc-orders' ], true ) ) {
+		enqueue_styles();
+	}
+} );
+add_action( 'wp_enqueue_scripts', static function (): void {
+	if ( function_exists( 'is_wc_endpoint_url' ) && ( is_wc_endpoint_url( 'view-order' ) || is_wc_endpoint_url( 'order-received' ) ) ) {
+		enqueue_styles();
+	}
+} );
