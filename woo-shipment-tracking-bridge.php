@@ -101,7 +101,8 @@ function receive( \WP_REST_Request $request ): \WP_REST_Response|\WP_Error {
 
 function display( \WC_Order $order ): void {
 	$shipment = $order->get_meta( META );
-	if ( ! $shipment ) {
+	if ( ! is_array( $shipment ) || ! is_string( $shipment['stage'] ?? null ) ||
+		! isset( STAGES[ $shipment['stage'] ] ) || ! is_string( $shipment['tracking'] ?? null ) ) {
 		return;
 	}
 	$labels = [
@@ -126,7 +127,7 @@ add_action( 'woocommerce_admin_order_data_after_shipping_address', __NAMESPACE__
 add_action( 'woocommerce_order_details_after_order_table', __NAMESPACE__ . '\display' );
 
 function enqueue_styles(): void {
-	wp_enqueue_style( 'codexawp-shipment', plugins_url( 'shipment.css', __FILE__ ), [], '1.1.0' );
+	wp_enqueue_style( 'codexawp-shipment', plugins_url( 'shipment.css', __FILE__ ), [], '1.2.0' );
 }
 add_action( 'admin_enqueue_scripts', static function (): void {
 	if ( in_array( get_current_screen()?->id, [ 'shop_order', 'woocommerce_page_wc-orders' ], true ) ) {

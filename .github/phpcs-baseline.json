@@ -1,0 +1,32 @@
+{
+    "_comment": "Pre-existing findings from the portfolio review. Counts are limited to this file and sniff. Remove entries as code is corrected.",
+    "files": {
+        "tests/check.php": {
+            "ERROR Generic.Files.LineEndings.InvalidEOLChar": 1,
+            "ERROR Squiz.Commenting.FileComment.Missing": 1,
+            "ERROR Squiz.Commenting.FunctionComment.Missing": 1,
+            "ERROR Universal.Arrays.DisallowShortArraySyntax.Found": 4,
+            "ERROR WordPress.Arrays.ArrayDeclarationSpacing.AssociativeArrayFound": 4,
+            "ERROR WordPress.Security.EscapeOutput.ExceptionNotEscaped": 1,
+            "ERROR WordPress.Security.EscapeOutput.OutputNotEscaped": 2,
+            "ERROR WordPress.WP.GlobalVariablesOverride.Prohibited": 1,
+            "WARNING Generic.Formatting.MultipleStatementAlignment.NotSameWarning": 3
+        },
+        "woo-shipment-tracking-bridge.php": {
+            "ERROR Generic.Files.LineEndings.InvalidEOLChar": 1,
+            "ERROR PEAR.Functions.FunctionCallSignature.CloseBracketLine": 5,
+            "ERROR PEAR.Functions.FunctionCallSignature.ContentAfterOpenBracket": 5,
+            "ERROR PEAR.Functions.FunctionCallSignature.MultipleArguments": 6,
+            "ERROR Squiz.Commenting.FileComment.MissingPackageTag": 1,
+            "ERROR Squiz.Commenting.FileComment.SpacingAfterComment": 1,
+            "ERROR Squiz.Commenting.FunctionComment.Missing": 4,
+            "ERROR Squiz.ControlStructures.ControlSignature.NewlineAfterOpenBrace": 1,
+            "ERROR Universal.Arrays.DisallowShortArraySyntax.Found": 15,
+            "ERROR WordPress.Arrays.ArrayDeclarationSpacing.AssociativeArrayFound": 2,
+            "ERROR WordPress.Arrays.ArrayKeySpacingRestrictions.NoSpacesAroundArrayKeys": 5,
+            "WARNING Generic.Formatting.MultipleStatementAlignment.NotSameWarning": 6,
+            "WARNING WordPress.DB.DirectDatabaseQuery.DirectQuery": 2,
+            "WARNING WordPress.DB.DirectDatabaseQuery.NoCaching": 2
+        }
+    }
+}

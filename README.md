@@ -1,5 +1,7 @@
 # Shipment Tracking Bridge for WooCommerce
 
+**What to try.** Run the local carrier fixture and check the delivery state and tracking number in the order.
+
 [![WordPress and WooCommerce integration checks](https://github.com/aa71200/woo-shipment-tracking-bridge/actions/workflows/checks.yml/badge.svg?branch=main)](https://github.com/aa71200/woo-shipment-tracking-bridge/actions/workflows/checks.yml)
 
 Carrier updates can arrive twice or out of order. This CodexaWP sample accepts signed events and updates one shipment per order while preserving the latest delivery state. Staff and buyers can see the tracking number in the order details.

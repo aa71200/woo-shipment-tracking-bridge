@@ -1,16 +1,16 @@
 .codexawp-shipment {
-	--ship-ink: #172848;
-	--ship-muted: #485b77;
-	--ship-border: #dbe5f4;
+	--ship-ink: #213430;
+	--ship-muted: #4a605b;
+	--ship-border: #d5e3dd;
 	container-type: inline-size;
 	box-sizing: border-box;
 	max-inline-size: 36rem;
 	margin-block: 14px;
-	padding: 16px;
+	padding: clamp(14px, 3vw, 23px);
 	border: 1px solid var(--ship-border);
-	border-block-start: 3px solid #3459c7;
-	border-radius: 11px;
-	background: #f7faff;
+	border-block-start: 3px solid #337555;
+	border-radius: 14px;
+	background: #f5faf7;
 	color: var(--ship-ink);
 	font: 13px/1.45 system-ui, sans-serif;
 }
@@ -19,11 +19,11 @@
 .codexawp-shipment .shipment-title { color: var(--ship-ink); font-size: 17px; font-weight: 710; }
 .codexawp-shipment .shipment-status { background: #e2e9fc; color: #1d3b95; border-radius: 20px; padding: 4px 9px; font-weight: 650; font-size: 11px; }
 .codexawp-shipment[data-stage="delivered"] .shipment-status { background: #dff1e8; color: #174b37; }
-.codexawp-shipment .shipment-reference { display: grid; margin-block: 12px 14px; gap: 2px; }
+.codexawp-shipment .shipment-reference { display: grid; margin-block: 13px 15px; gap: 3px; padding: 9px 11px; background: #fff; border: 1px solid var(--ship-border); border-radius: 8px; }
 .codexawp-shipment .shipment-reference span { color: var(--ship-muted); font-size: 12px; }
 .codexawp-shipment .shipment-reference b { font: 650 14px/1.3 ui-monospace, Consolas, monospace; overflow-wrap: anywhere; }
 .codexawp-shipment .shipment-route { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 7px; margin: 0; padding: 0; list-style: none; }
 .codexawp-shipment .shipment-route li { list-style: none; margin: 0; padding-block-start: 6px; border-block-start: 3px solid #cfdaed; color: var(--ship-muted); font-size: 11px; }
-.codexawp-shipment .shipment-route li.is-reached { border-color: #3459c7; }
+.codexawp-shipment .shipment-route li.is-reached { border-color: #337555; }
 .codexawp-shipment .shipment-route li[aria-current="step"] { color: var(--ship-ink); font-weight: 720; }
 @container (max-width: 200px) { .codexawp-shipment .shipment-route { grid-template-columns: 1fr; } }
