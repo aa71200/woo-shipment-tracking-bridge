@@ -2,10 +2,11 @@
 /**
  * Plugin Name: CodexaWP Shipment Tracking Bridge
  * Description: Receives signed events from a sample carrier and displays tracking in WooCommerce.
- * Version: 1.0.0
+ * Version: 1.0.1
  * Requires Plugins: woocommerce
  * Requires PHP: 8.2
  * License: GPL-2.0-or-later
+ * Text Domain: woo-shipment-tracking-bridge
  */
 declare(strict_types=1);
 
@@ -26,10 +27,12 @@ function authorize( \WP_REST_Request $request ): bool|\WP_Error {
 	$signature = $request->get_header( 'X-Carrier-Signature' );
 	if (
 		! is_string( $secret ) || strlen( $secret ) < 24 ||
-		! ctype_digit( $timestamp ) || abs( time() - (int) $timestamp ) > 300 ||
+		! is_string( $timestamp ) || ! preg_match( '/\A[0-9]{1,10}\z/', $timestamp ) ||
+		! is_string( $signature ) || ! preg_match( '/\A[a-f0-9]{64}\z/', $signature ) ||
+		abs( time() - (int) $timestamp ) > 300 ||
 		! hash_equals( hash_hmac( 'sha256', $timestamp . '.' . $request->get_body(), $secret ), $signature )
 	) {
-		return new \WP_Error( 'carrier_signature', 'Invalid or expired carrier signature.', [ 'status' => 401 ] );
+		return new \WP_Error( 'carrier_signature', __( 'Invalid or expired carrier signature.', 'woo-shipment-tracking-bridge' ), [ 'status' => 401 ] );
 	}
 	return true;
 }
@@ -45,6 +48,9 @@ add_action( 'rest_api_init', static function (): void {
 function receive( \WP_REST_Request $request ): \WP_REST_Response|\WP_Error {
 	global $wpdb;
 	$data = $request->get_json_params();
+	if ( ! is_array( $data ) || array_is_list( $data ) ) {
+		return new \WP_Error( 'carrier_payload', __( 'Invalid carrier event.', 'woo-shipment-tracking-bridge' ), [ 'status' => 400 ] );
+	}
 	$id = $data['orderId'] ?? null;
 	$event = $data['eventId'] ?? null;
 	$tracking = $data['tracking'] ?? null;
@@ -56,28 +62,37 @@ function receive( \WP_REST_Request $request ): \WP_REST_Response|\WP_Error {
 		! is_string( $event ) || ! preg_match( '/\A[A-Za-z0-9-]{1,64}\z/', $event ) ||
 		! is_string( $tracking ) || ! preg_match( '/\A[A-Za-z0-9-]{1,40}\z/', $tracking )
 	) {
-		return new \WP_Error( 'carrier_payload', 'Invalid carrier event.', [ 'status' => 400 ] );
+		return new \WP_Error( 'carrier_payload', __( 'Invalid carrier event.', 'woo-shipment-tracking-bridge' ), [ 'status' => 400 ] );
 	}
 	$lock = 'codexa.ship.' . md5( $wpdb->prefix . $id );
 	if ( '1' !== (string) $wpdb->get_var( $wpdb->prepare( 'SELECT GET_LOCK(%s, 2)', $lock ) ) ) {
-		return new \WP_Error( 'carrier_busy', 'Please retry the event.', [ 'status' => 503 ] );
+		return new \WP_Error( 'carrier_busy', __( 'Please retry the event.', 'woo-shipment-tracking-bridge' ), [ 'status' => 503 ] );
 	}
 	try {
 		$order = wc_get_order( $id );
 		if ( ! $order || 'shop_order' !== $order->get_type() ) {
-			return new \WP_Error( 'carrier_order', 'Order not found.', [ 'status' => 404 ] );
+			return new \WP_Error( 'carrier_order', __( 'Order not found.', 'woo-shipment-tracking-bridge' ), [ 'status' => 404 ] );
 		}
 		$previous = $order->get_meta( META );
 		if ( $previous ) {
 			if ( $previous['tracking'] !== $tracking ) {
-				return new \WP_Error( 'carrier_tracking', 'The demo accepts one tracking number per order.', [ 'status' => 409 ] );
+				return new \WP_Error( 'carrier_tracking', __( 'The demo accepts one tracking number per order.', 'woo-shipment-tracking-bridge' ), [ 'status' => 409 ] );
 			}
 			if ( $previous['event'] === $event || $previous['sequence'] >= $sequence || STAGES[$previous['stage']] > STAGES[$stage] ) {
 				return rest_ensure_response( [ 'result' => 'ignored' ] );
 			}
 		}
 		$order->update_meta_data( META, compact( 'event', 'tracking', 'stage', 'sequence' ) );
-		$order->save_meta_data();
+		try {
+			$order->save_meta_data();
+			$order->read_meta_data( true );
+			if ( $order->get_meta( META ) !== compact( 'event', 'tracking', 'stage', 'sequence' ) ) {
+				throw new \RuntimeException( 'The order data store did not persist the shipment.' );
+			}
+		} catch ( \Throwable $error ) {
+			wc_get_logger()->error( 'Could not save carrier event.', [ 'source' => 'codexawp-shipment', 'order_id' => $id ] );
+			return new \WP_Error( 'carrier_storage', __( 'Could not save the shipment. Please retry.', 'woo-shipment-tracking-bridge' ), [ 'status' => 503 ] );
+		}
 		return rest_ensure_response( [ 'result' => 'recorded' ] );
 	} finally {
 		$wpdb->get_var( $wpdb->prepare( 'SELECT RELEASE_LOCK(%s)', $lock ) );
@@ -89,13 +104,17 @@ function display( \WC_Order $order ): void {
 	if ( ! $shipment ) {
 		return;
 	}
-	$labels = [ 'dispatched' => 'Dispatched', 'in_transit' => 'In transit', 'delivered' => 'Delivered' ];
+	$labels = [
+		'dispatched' => __( 'Dispatched', 'woo-shipment-tracking-bridge' ),
+		'in_transit' => __( 'In transit', 'woo-shipment-tracking-bridge' ),
+		'delivered'  => __( 'Delivered', 'woo-shipment-tracking-bridge' ),
+	];
 	$stage = $shipment['stage'];
 	?>
-	<section class="codexawp-shipment" data-stage="<?php echo esc_attr( $stage ); ?>" aria-label="Shipment tracking">
-		<div class="shipment-header"><strong class="shipment-title">Shipment tracking</strong><span class="shipment-status"><?php echo esc_html( $labels[$stage] ); ?></span></div>
-		<div class="shipment-reference"><span>Tracking number</span><b><?php echo esc_html( $shipment['tracking'] ); ?></b></div>
-		<ol class="shipment-route" aria-label="Delivery progress">
+	<section class="codexawp-shipment" data-stage="<?php echo esc_attr( $stage ); ?>" aria-label="<?php esc_attr_e( 'Shipment tracking', 'woo-shipment-tracking-bridge' ); ?>">
+		<div class="shipment-header"><strong class="shipment-title"><?php esc_html_e( 'Shipment tracking', 'woo-shipment-tracking-bridge' ); ?></strong><span class="shipment-status"><?php echo esc_html( $labels[ $stage ] ); ?></span></div>
+		<div class="shipment-reference"><span><?php esc_html_e( 'Tracking number', 'woo-shipment-tracking-bridge' ); ?></span><b><?php echo esc_html( $shipment['tracking'] ); ?></b></div>
+		<ol class="shipment-route" aria-label="<?php esc_attr_e( 'Delivery progress', 'woo-shipment-tracking-bridge' ); ?>">
 		<?php foreach ( $labels as $step => $label ) : ?>
 			<li class="<?php echo esc_attr( STAGES[$step] <= STAGES[$stage] ? 'is-reached' : '' ); ?>" <?php if ( $step === $stage ) { echo 'aria-current="step"'; } ?>><?php echo esc_html( $label ); ?></li>
 		<?php endforeach; ?>
