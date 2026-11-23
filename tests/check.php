@@ -19,19 +19,24 @@ function check( bool $ok, string $message ): void {
 
 $order = wc_create_order();
 $order->save();
-$request = static function ( array $event, bool $signed = true ) use ( $order ): \WP_REST_Response {
+$request = static function ( array $event, ?bool $signed = true, ?int $sent_at = null ) use ( $order ): \WP_REST_Response {
 	$data = $event + [ 'orderId' => $order->get_id(), 'tracking' => 'DEMO-331' ];
 	$body = wp_json_encode( $data );
-	$timestamp = (string) time();
+	$timestamp = (string) ( $sent_at ?? time() );
 	$request = new WP_REST_Request( 'POST', '/codexawp-carrier/v1/events' );
 	$request->set_header( 'Content-Type', 'application/json' );
 	$request->set_header( 'X-Carrier-Timestamp', $timestamp );
-	$request->set_header( 'X-Carrier-Signature', $signed ? hash_hmac( 'sha256', $timestamp . '.' . $body, CODEXAWP_CARRIER_SECRET ) : 'invalid' );
+	if ( null !== $signed ) {
+		$request->set_header( 'X-Carrier-Signature', $signed ? hash_hmac( 'sha256', $timestamp . '.' . $body, CODEXAWP_CARRIER_SECRET ) : str_repeat( '0', 64 ) );
+	}
 	$request->set_body( $body );
 	return rest_do_request( $request );
 };
 $initial = [ 'eventId' => 'E1', 'stage' => 'in_transit', 'sequence' => 1 ];
 check( 401 === $request( $initial, false )->get_status(), 'Invalid signature returns 401' );
+check( 401 === $request( $initial, null )->get_status(), 'Missing signature returns 401' );
+check( 401 === $request( $initial, true, time() - 301 )->get_status(), 'Expired event returns 401' );
+check( '' === wc_get_order( $order->get_id() )->get_meta( '_codexawp_shipment' ), 'Rejected events leave the order unmodified' );
 check( 'recorded' === $request( $initial )->get_data()['result'], 'Signed event accepted' );
 check( 'ignored' === $request( $initial )->get_data()['result'], 'Replay ignored' );
 check( 'recorded' === $request( [ 'eventId' => 'E3', 'stage' => 'delivered', 'sequence' => 3 ] )->get_data()['result'], 'Delivery recorded' );

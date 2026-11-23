@@ -20,7 +20,7 @@ Set `CODEXAWP_CARRIER_SECRET` in the test site's configuration. Send `POST /wp-j
 
 Activate this plugin on a disposable WordPress site with WooCommerce active and `WP_ENVIRONMENT_TYPE` set to `local`. Set `CODEXAWP_TEST_WP_LOAD` to the absolute path to that site's `wp-load.php`, then run `php tests/check.php` from this repository.
 
-Checks assert signature rejection, replay handling, monotonic shipment status and saved WooCommerce order metadata.
+The fixture makes local REST requests and checks invalid, missing and expired signatures, replay handling, monotonic shipment status and saved WooCommerce order metadata. Rejected signatures leave the order unchanged. The bridge models one shipment per order with a synthetic carrier fixture.
 
 ## License
 
