@@ -1,6 +1,6 @@
 # Shipment Tracking Bridge for WooCommerce
 
-An original CodexaWP portfolio demo for receiving carrier updates. A signed REST request attaches one sample shipment to a WooCommerce order. The tracking number and latest status appear for staff and on the order details page.
+Carrier updates can arrive twice or out of order. This CodexaWP sample accepts signed events and updates one shipment per order while preserving the latest delivery state. Staff and buyers can see the tracking number in the order details.
 
 ## Interface preview
 
